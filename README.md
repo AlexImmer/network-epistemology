@@ -57,8 +57,8 @@ The simplistic model would denote a piece of knowledge lost if two publications 
 
 In addition to _tradition_ and _transformation_ we can now consider recurring concepts as information persistence. This is not a graph problem anymore but rather a similarity search. As described earlier, we have a topic vectors associated to documents and can measure their similarity by the _l1_ distance.
 
-**Definition**: _We say a publication is alive at time t by recurrence if there is a publication at time t that is conceptually **similar**. 
+**Definition**: _We say a publication is alive at time t by recurrence if there is a publication at time t that is conceptually **similar**._ 
 
-**Definition**: _Two publications are conceptually delta-similar if the l1 distance of their topics is less or equal to delta.
+**Definition**: _Two publications are conceptually delta-similar if the l1 distance of their topics is less or equal to delta._
 
 Note that the _l1_ distance is upper bounded for this case by 2 and thus _delta_ is on the interval [0, 2].
