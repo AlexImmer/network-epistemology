@@ -62,3 +62,10 @@ In addition to _tradition_ and _transformation_ we can now consider recurring co
 **Definition**: _Two publications are conceptually delta-similar if the l1 distance of their topics is less or equal to delta._
 
 Note that the _l1_ distance is upper bounded for this case by 2 and thus _delta_ is on the interval [0, 2].
+
+# Install & Run
+
+Requirements:
+* python 3.6.1
+* networkx 2.1
+* matplotlib 2.2.0rc1
