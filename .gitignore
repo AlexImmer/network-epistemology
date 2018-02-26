@@ -102,3 +102,10 @@ ENV/
 
 # PyCharm
 .idea/
+
+# Project-related
+publication_data/
+csv_data/
+
+# OSX
+.DS_Store
