@@ -40,10 +40,10 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**9):
         X_cur = X_topic[X_topic['year'] == year][cols]
         ix_stepsize = int(max_mem / len(X_cur))
 
-        min_dist = pd.DataFrame(index=X_prev.index)
+        min_dist = pd.DataFrame(index=X_prev.index, columns=['min_dist'])
         for i in tqdm(range(0, len(X_prev), ix_stepsize)):
-            min_dist.iloc[i: i+ix_stepsize] = cdist(X_prev.iloc[i: i+ix_stepsize].values,
-                                                    X_cur.values, metric='cityblock').min(axis=1)
+            min_dist.iloc[i: i+ix_stepsize, 0] = cdist(X_prev.iloc[i: i+ix_stepsize].values,
+                                                       X_cur.values, metric='cityblock').min(axis=1)
 
         res[year] = min_dist
     return res
