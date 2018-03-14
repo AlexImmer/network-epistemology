@@ -20,9 +20,9 @@ def obtain_min_distances_parallel(X_topic, years, max_mem=36000000):
         X_cur = X_topic[X_topic['year'] == year][cols]
         ix_stepsize = int(max_mem / len(X_cur))
 
+        iterable = [(X_prev.iloc[i: i + ix_stepsize].copy(), X_cur.copy())
+                    for i in range(0, len(X_prev), ix_stepsize)]
         with Pool(processes=4) as pool:
-            iterable = [(X_prev.iloc[i: i+ix_stepsize].copy(), X_cur.copy())
-                        for i in range(0, len(X_prev), ix_stepsize)]
             X_prevsubs = pool.imap(compute_cdist, iterable)
 
         min_dist = pd.DataFrame(index=X_prev.index)
