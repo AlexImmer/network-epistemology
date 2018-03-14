@@ -51,5 +51,5 @@ if __name__ == '__main__':
     X_multopic = load_doc_topics()
     X_multopic = pd.DataFrame(X_multopic)
     X_multopic['year'] = dates_corpus
-    min_dists = obtain_min_distances(X_multopic, set(dates_corpus))
+    min_dists = obtain_min_distances_parallel(X_multopic, set(dates_corpus), max_mem=10**10)
     pickle.dump(min_dists, 'data/min_dists.pkl')
