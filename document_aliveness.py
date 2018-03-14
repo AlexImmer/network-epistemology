@@ -73,5 +73,5 @@ if __name__ == '__main__':
     print('compute distances')
     min_dists = obtain_min_dist_split(X_multopic, set(dates_corpus), max_mem=10**9)
     print('dump results')
-    pickle.dump(min_dists, 'data/min_dists.pkl')
+    pickle.dump(min_dists, open('data/min_dists.pkl', 'wb'))
     print('finished.')
