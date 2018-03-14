@@ -8,10 +8,6 @@ from tqdm import tqdm
 from loading import load_corpus, load_doc_topics
 
 
-def compute_cdist(X_prev, X_cur):
-    return cdist(X_prev.values, X_cur.values, metric='cityblock').min(axis=1)
-
-
 def obtain_min_distances_parallel(X_topic, years, max_mem=36000000):
     res = {}
     for year in tqdm(sorted(list(years))[1:]):
@@ -20,10 +16,13 @@ def obtain_min_distances_parallel(X_topic, years, max_mem=36000000):
         X_cur = X_topic[X_topic['year'] == year][cols]
         ix_stepsize = int(max_mem / len(X_cur))
 
-        iterable = [(X_prev.iloc[i: i + ix_stepsize].copy(), X_cur.copy())
-                    for i in range(0, len(X_prev), ix_stepsize)]
+        def compute_cdist(start):
+            return cdist(X_prev.iloc[start:start+ix_stepsize].values, X_cur.values,
+                         metric='cityblock').min(axis=1)
+
+        iterable = range(0, len(X_prev), ix_stepsize)
         with Pool(processes=4) as pool:
-            X_prevsubs = pool.imap(compute_cdist, iterable)
+            X_prevsubs = pool.map(compute_cdist, iterable)
 
         min_dist = pd.DataFrame(index=X_prev.index)
         for i, res in zip(range(0, len(X_prev), ix_stepsize), X_prevsubs):
