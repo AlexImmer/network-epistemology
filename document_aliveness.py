@@ -20,12 +20,12 @@ def obtain_min_distances_parallel(X_topic, years, max_mem=36000000):
         X_cur = X_topic[X_topic['year'] == year][cols]
         ix_stepsize = int(max_mem / len(X_cur))
 
-        with Pool(processes=-1) as pool:
-            iterable = [(X_prev.iloc[i: i+ix_stepsize], X_cur) for i in range(0, len(X_prev))]
+        with Pool(processes=4) as pool:
+            iterable = [(X_prev.iloc[i: i+ix_stepsize], X_cur) for i in range(0, len(X_prev), ix_stepsize)]
             X_prevsubs = pool.imap(compute_cdist, iterable)
 
         min_dist = pd.DataFrame(index=X_prev.index)
-        for i, res in zip(range(0, len(X_prev)), X_prevsubs):
+        for i, res in zip(range(0, len(X_prev), ix_stepsize), X_prevsubs):
             min_dist.iloc[i: i+ix_stepsize] = res
 
         res[year] = min_dist
@@ -47,9 +47,14 @@ def obtain_min_distances(X_topic, years):
 if __name__ == '__main__':
     # compute distance list following the scheme
     # list[year] : DataFrame.loc[pubs before year] : dist to closest pub of year in [0, 1]
+    print('load corpus')
     _, _, dates_corpus = load_corpus()
+    print('load doc topics')
     X_multopic = load_doc_topics()
     X_multopic = pd.DataFrame(X_multopic)
     X_multopic['year'] = dates_corpus
+    print('compute distances')
     min_dists = obtain_min_distances_parallel(X_multopic, set(dates_corpus), max_mem=10**10)
+    print('dump results')
     pickle.dump(min_dists, 'data/min_dists.pkl')
+    print('finished.')
