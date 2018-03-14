@@ -1,24 +1,33 @@
 import numpy as np
 import pandas as pd
 import pickle
+from multiprocessing import Pool
 from scipy.spatial.distance import cdist
 from tqdm import tqdm
 
 from loading import load_corpus, load_doc_topics
 
 
-def obtain_min_distances_threshd(X_topic, years, max_mem=36000000):
+def compute_cdist(X_prev, X_cur):
+    return cdist(X_prev.values, X_cur.values, metric='cityblock').min(axis=1)
+
+
+def obtain_min_distances_parallel(X_topic, years, max_mem=36000000):
     res = {}
     for year in sorted(list(years))[1:]:
         cols = np.arange(0, 100)
         X_prev = X_topic[X_topic['year'] < year][cols]
         X_cur = X_topic[X_topic['year'] == year][cols]
         ix_stepsize = int(max_mem / len(X_cur))
+
+        with Pool(processes=-1) as pool:
+            iterable = [(X_prev.iloc[i: i+ix_stepsize], X_cur) for i in range(0, len(X_prev))]
+            X_prevsubs = pool.imap(compute_cdist, iterable)
+
         min_dist = pd.DataFrame(index=X_prev.index)
-        print(year)
-        for i in tqdm(range(0, len(X_prev), ix_stepsize)):
-            X_prevsub = X_prev.iloc[i: i+ix_stepsize].values
-            min_dist.iloc[i: i+ix_stepsize] = cdist(X_prevsub, X_cur.values, metric='cityblock').min(axis=1)
+        for i, res in zip(range(0, len(X_prev)), X_prevsubs):
+            min_dist.iloc[i: i+ix_stepsize] = res
+
         res[year] = min_dist
     return res
 
