@@ -14,14 +14,15 @@ def compute_cdist(X_prev, X_cur):
 
 def obtain_min_distances_parallel(X_topic, years, max_mem=36000000):
     res = {}
-    for year in sorted(list(years))[1:]:
+    for year in tqdm(sorted(list(years))[1:]):
         cols = np.arange(0, 100)
         X_prev = X_topic[X_topic['year'] < year][cols]
         X_cur = X_topic[X_topic['year'] == year][cols]
         ix_stepsize = int(max_mem / len(X_cur))
 
         with Pool(processes=4) as pool:
-            iterable = [(X_prev.iloc[i: i+ix_stepsize], X_cur) for i in range(0, len(X_prev), ix_stepsize)]
+            iterable = [(X_prev.iloc[i: i+ix_stepsize].copy(), X_cur.copy())
+                        for i in range(0, len(X_prev), ix_stepsize)]
             X_prevsubs = pool.imap(compute_cdist, iterable)
 
         min_dist = pd.DataFrame(index=X_prev.index)
@@ -54,7 +55,7 @@ if __name__ == '__main__':
     X_multopic = pd.DataFrame(X_multopic)
     X_multopic['year'] = dates_corpus
     print('compute distances')
-    min_dists = obtain_min_distances_parallel(X_multopic, set(dates_corpus), max_mem=10**10)
+    min_dists = obtain_min_distances_parallel(X_multopic, set(dates_corpus), max_mem=10**9)
     print('dump results')
     pickle.dump(min_dists, 'data/min_dists.pkl')
     print('finished.')
