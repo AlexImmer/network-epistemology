@@ -103,6 +103,9 @@ ENV/
 # PyCharm
 .idea/
 
+# CLion
+cpp/cmake-build-debug
+
 # Project-related
 publication_data/
 csv_data/
