@@ -1,6 +1,7 @@
 import json
 import pickle
 import numpy as np
+import pandas as pd
 
 
 corpus_files = ['publication_data/dblp-ref-0.json',
@@ -41,3 +42,7 @@ def load_doc_topics(file=None):
 def load_min_dists(file=None):
     file = file or 'data/min_dists.pkl'
     return pickle.load(file)
+
+def load_delta(year):
+    file = 'data/{year}_distances.pd'.format(year=year)
+    return pd.read_pickle(file)
