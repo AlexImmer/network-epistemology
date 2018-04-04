@@ -11,10 +11,8 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7):
     for year in tqdm(sorted(list(years))[1:]):
         try:
             load_delta(year)
-            print('already computed', year)
             continue
         except:
-            print('to compute', year)
             pass
         cols = np.arange(0, 100)
         X_prev = X_topic.loc[(X_topic['year'] < year), cols]
@@ -34,7 +32,6 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7):
         min_dist['min_dist'] = dists
         min_dist['closest_doc'] = closest
         min_dist.to_pickle('data/{year}_distances.pd'.format(year=year))
-        print('dumped', year)
 
 
 def compute_dists(X_prev):
