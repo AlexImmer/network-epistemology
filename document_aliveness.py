@@ -17,9 +17,9 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7):
             print('to compute', year)
             pass
         cols = np.arange(0, 100)
-        X_prev = X_topic.loc[(X_topic['year'] < year), cols]
+        X_prev = X_topic.loc[(X_topic['year'] < year), cols].values
         global X_cur
-        X_cur = X_topic.loc[(X_topic['year'] == year), cols].values
+        X_cur = X_topic.loc[(X_topic['year'] == year), cols]
         ix_stepsize = int(max_mem / len(X_cur))
         min_dist = pd.DataFrame(index=X_prev.index, columns=['min_dist', 'closest_doc'])
         X_prev = X_prev.values
