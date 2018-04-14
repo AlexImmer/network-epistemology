@@ -11,23 +11,26 @@
 
 class PubInfo {
 public:
-
     std::string id;
     int year;
+    std::string title;
     PubInfo() {}
-    PubInfo(std::string _id, int _year) : id(_id), year(_year) {}
+    PubInfo(std::string _id, int _year, std::string _title) : id(_id), year(_year), title(_title) {}
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
         ar & id;
         ar & year;
+        ar & title;
     }
 };
 
 const int MAXV = 5000000;
 
-const int CITATION_EDGE = 1;
-const int COAUTHORSHIP_EDGE = 2;
-const int AUTHORSHIP_EDGE = 3;
+const int SPREADS = 0;
+const int CITES = 1;
+const int COLLABORATES = 2;
+const int PUBLISHES = 3;
+const int AUTHORED = 4;
 
 // Data to be serialized
 extern int V;
