@@ -10,9 +10,9 @@ using namespace std;
 
 unordered_map<string, int> author_ids;
 unordered_map<string, int> publication_ids;
-vector<string> names;
-vector<PubInfo> pub_infos;
-vector<vector<pair<int, int>>> adj, citationEdges;
+unordered_map<int, string> names;
+unordered_map<int, PubInfo> pub_infos;
+vector<vector<Edge>> adj;
 int V;
 
 string remove_quotes(const string &s) {
@@ -31,8 +31,9 @@ void read_authors(const string &path) {
     getline(fs, line);
     while (getline(fs, line)) {
         string name = remove_quotes(line);
-        names.push_back(name);
-        author_ids[name] = V++;
+        names[V] = name;
+        author_ids[name] = V;
+        V++;
     }
 }
 
@@ -55,8 +56,9 @@ void read_publications(const string &path) {
         getline(ss, title, ',');
         title = remove_quotes(title);
 
-        publication_ids[pub_id] = V++;
-        pub_infos.push_back(PubInfo(pub_id, stoi(pub_year), title));
+        publication_ids[pub_id] = V;
+        pub_infos[V] = PubInfo(pub_id, stoi(pub_year), title);
+        V++;
     }
 }
 
@@ -66,7 +68,10 @@ void read_edges(string path, string file_name, int edge_type) {
     getline(fs, line);
 
     adj.resize(V);
+//    int lineIdx = -1;
     while (getline(fs, line)) {
+//        cerr << ++lineIdx << endl;
+//        cerr << line<< endl;
         stringstream ss(line);
         string from;
         getline(ss, from, ',');
@@ -79,7 +84,6 @@ void read_edges(string path, string file_name, int edge_type) {
             fromIdx = author_ids[from];
         }
 
-
         string to;
         getline(ss, to, ',');
         to = remove_quotes(to);
@@ -90,17 +94,24 @@ void read_edges(string path, string file_name, int edge_type) {
             toIdx = author_ids[to];
         }
 
+        string yearStr;
+        int year;
+        if (edge_type == COLLABORATES) {
+            getline(ss, yearStr, ',');
+            year = stoi(yearStr);
+        }
+
 
         if (edge_type == CITES) {
             // in .csv file fromIdx cites toIdx
-            adj[fromIdx].push_back({toIdx, CITES});
-            adj[toIdx].push_back({fromIdx, SPREADS});
+            adj[fromIdx].push_back(Edge(toIdx, CITES));
+            adj[toIdx].push_back(Edge(fromIdx, SPREADS));
         } else if (edge_type == COLLABORATES) {
-            adj[fromIdx].push_back({toIdx, COLLABORATES});
-            adj[toIdx].push_back({fromIdx, COLLABORATES});
+            adj[fromIdx].push_back(Edge(toIdx, COLLABORATES, year));
+            adj[toIdx].push_back(Edge(fromIdx, COLLABORATES, year));
         } else {
-            adj[fromIdx].push_back({toIdx, AUTHORED});
-            adj[toIdx].push_back({fromIdx, PUBLISHES});
+            adj[fromIdx].push_back(Edge(toIdx, AUTHORED));
+            adj[toIdx].push_back(Edge(fromIdx, PUBLISHES));
         }
     }
 }

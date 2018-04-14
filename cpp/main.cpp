@@ -30,10 +30,6 @@ queue<int> bfsQueue;
 vector<vector<int>> components;
 vector<int> compID;
 
-bool isPublication(int idx) {
-    return idx >= names.size();
-}
-
 void bfsCC(int startIdx) {
     while (!bfsQueue.empty()) {
         bfsQueue.pop();
@@ -44,9 +40,9 @@ void bfsCC(int startIdx) {
         components.rbegin()->push_back(curr);
         compID[curr] = components.size() - 1;
         for (auto &nxt : adj[curr]) {
-            if (!visited[nxt.first]) {
-                visited[nxt.first] = true;
-                bfsQueue.push(nxt.first);
+            if (!visited[nxt.next]) {
+                visited[nxt.next] = true;
+                bfsQueue.push(nxt.next);
             }
         }
     }
@@ -58,17 +54,20 @@ void bfs(const int &year, const int &EDGE_TYPE) {
     for (; !q.empty(); q.pop()) {
         int curr = q.front();
         for (auto x : adj[curr]) {
-            if (x.second != EDGE_TYPE) {
+            if (x.type != EDGE_TYPE) {
                 continue;
             }
-            if (EDGE_TYPE == CITES && pub_infos[x.first - names.size()].year >= year) {
+            if (dist[x.next] != -1) {
                 continue;
             }
-            if (dist[x.first] != -1) {
+            if (EDGE_TYPE == CITES && pub_infos[x.next].year >= year) {
                 continue;
             }
-            dist[x.first] = dist[curr] + 1;
-            q.push(x.first);
+            if (EDGE_TYPE == COLLABORATES && x.year >= year) {
+                continue;
+            }
+            dist[x.next] = dist[curr] + 1;
+            q.push(x.next);
         }
     }
 }
@@ -124,6 +123,7 @@ int main(int argc, char *argv[]) {
     reopen(ofs, inPath + "ccs.bak");
     boost::archive::binary_oarchive oarch(ofs);
     oarch << components << compID;
+    return 0;
 #endif
     reopen(ifs, inPath + "ccs.bak");
     boost::archive::binary_iarchive iaCC(ifs);
@@ -135,11 +135,13 @@ int main(int argc, char *argv[]) {
     for (int i = 0; i < components.size(); i++) {
         vector<int> cc = components[i];
         if (cc.size() > 200) {
+            cerr << i << endl;
+            cerr << cc.size() << endl;
             continue;
         }
         for (auto v : cc) {
-            if (isPublication(v)) {
-                ofs << pub_infos[v - names.size()].title << endl;
+            if (v >= names.size()) {
+                ofs << pub_infos[v].title << endl;
             }
         }
         ofs << "---------------------------------------------------------------------------------------------" << endl << endl;
@@ -154,23 +156,25 @@ int main(int argc, char *argv[]) {
             q.pop();
         }
         memset(dist, -1, sizeof dist);
-        for (int i = 0; i < pub_infos.size(); i++) {
-            if (pub_infos[i].year == year) {
-                dist[i + names.size()] = 0;
-                q.push(i + names.size());
+        for (auto pub : pub_infos) {
+            int i = pub.first;
+            if (pub.second.year == year) {
+                dist[i] = 0;
+                q.push(i);
             }
         }
         bfs(year, CITES);
-//        int min_dist = 1000;
-//        int max_dist = 0;
+        int min_dist = 1000;
+        int max_dist = 0;
         reopen(ofs, outPath +  "distances" + to_string(year) + ".txt");
-        for (int i = 0; i < pub_infos.size(); i++) {
-            int dst = dist[i + names.size()];
-//            min_dist = min(min_dist, dst);
-//            max_dist = max(max_dist, dst);
+        for (auto pub : pub_infos) {
+            int i = pub.first;
+            int dst = dist[i];
+            min_dist = min(min_dist, dst);
+            max_dist = max(max_dist, dst);
             ofs << dst << ",";
         }
-//        cerr << min_dist << " " << max_dist << endl;
+        cerr << min_dist << " " << max_dist << endl;
     }
 */
 
@@ -181,14 +185,15 @@ int main(int argc, char *argv[]) {
             q.pop();
         }
         memset(dist, -1, sizeof dist);
-        for (int i = 0; i < pub_infos.size(); i++) {
-            if (pub_infos[i].year == year) {
-                for (auto x : adj[i + names.size()]) {
-                    if (x.second != AUTHORED) {
+        for (auto pub : pub_infos) {
+            int i = pub.first;
+            if (pub.second.year == year) {
+                for (auto x : adj[i]) {
+                    if (x.type != AUTHORED) {
                         continue;
                     }
-                    dist[x.first] = 0;
-                    q.push(x.first);
+                    dist[x.next] = 0;
+                    q.push(x.next);
                 }
             }
         }
@@ -196,7 +201,8 @@ int main(int argc, char *argv[]) {
         int min_dist = 1000;
         int max_dist = 0;
         reopen(ofs, outPath +  "tradition" + to_string(year) + ".txt");
-        for (int i = 0; i < names.size(); i++) {
+        for (auto author : names) {
+            int i = author.first;
             int dst = dist[i];
             min_dist = min(min_dist, dst);
             max_dist = max(max_dist, dst);

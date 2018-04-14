@@ -3,6 +3,14 @@ import sys
 import itertools
 
 
+def fix(s):
+    if '"' in s:
+        s = s.replace('"', "_")
+    if ',' in s:
+        s = s.replace(',', "_")
+    return s
+
+
 def create_authors_csv():
     print("Getting author names")
     authors = set()
@@ -13,8 +21,7 @@ def create_authors_csv():
                 if 'authors' not in j:
                     continue
                 for auth in j['authors']:
-                    if '"' in auth:
-                        auth = auth.replace('"', "_")
+                    auth = fix(auth)
                     authors.add(auth)
                     # break
 
@@ -34,8 +41,7 @@ def create_publications_csv():
         with open(sys.argv[i]) as FileObj:
             for line in FileObj:
                 j = json.loads(line)
-                if '"' in j['title']:
-                    j['title'] = j['title'].replace('"', "_")
+                j['title'] = fix(j['title'])
                 publications.append({k: j[k] for k in ('title', 'year', 'id')})
                 # break
     print("Dumping publications")
@@ -57,8 +63,7 @@ def create_publication_author_relationships():
                 if 'authors' not in j:
                     continue
                 for auth in j['authors']:
-                    if '"' in auth:
-                        auth = auth.replace('"', "_")
+                    auth = fix(auth)
                     relationships.append((j['id'], auth))
                     # break
 
@@ -82,18 +87,17 @@ def create_coauthorship_relationships():
                     continue
                 authors = []
                 for auth in j['authors']:
-                    if '"' in auth:
-                        auth = auth.replace('"', "_")
+                    auth = fix(auth)
                     authors.append(auth)
                 for pair in itertools.combinations(authors, r=2):
-                    relationships.append((pair[0], pair[1]))
+                    relationships.append((pair[0], pair[1], j['year']))
                 # break
 
     print("Dumping co-authorship data")
     f = open("csv_data/coauthorship.csv", "w")
-    f.write(":START_ID(author),:END_ID(author)\n")
+    f.write(":START_ID(author),:END_ID(author),year:INT\n")
     for rel in relationships:
-        f.write('"%s","%s"\n' % (rel[0], rel[1]))
+        f.write('"%s","%s",%d\n' % (rel[0], rel[1], rel[2]))
     f.close()
     print("co-authorship relationships - done!")
 
@@ -119,8 +123,9 @@ def create_citation_relationship():
     f.close()
     print("citation relationships - done!")
 
-# create_authors_csv()
-# create_publications_csv()
-# create_publication_author_relationships()
-# create_coauthorship_relationships()
+
+create_authors_csv()
+create_publications_csv()
+create_publication_author_relationships()
+create_coauthorship_relationships()
 create_citation_relationship()

@@ -14,13 +14,32 @@ public:
     std::string id;
     int year;
     std::string title;
+
     PubInfo() {}
     PubInfo(std::string _id, int _year, std::string _title) : id(_id), year(_year), title(_title) {}
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
         ar & id;
         ar & year;
         ar & title;
+    }
+};
+
+struct Edge {
+    int next;
+    int type;
+    int year;
+
+    Edge() {}
+    Edge(int _next, int _type) : next(_next), type(_type), year(0) {}
+    Edge(int _next, int _type, int _year) : next(_next), type(_type), year(_year) {}
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        ar & next;
+        ar & type;
+        ar & year;
     }
 };
 
@@ -36,9 +55,9 @@ const int AUTHORED = 4;
 extern int V;
 extern std::unordered_map<std::string, int> author_ids;
 extern std::unordered_map<std::string, int> publication_ids;
-extern std::vector<std::string> names;
-extern std::vector<PubInfo> pub_infos;
-extern std::vector<std::vector<std::pair<int, int>>> adj;
+extern std::unordered_map<int, std::string> names;
+extern std::unordered_map<int, PubInfo> pub_infos;
+extern std::vector<std::vector<Edge>> adj;
 // ----------------------------------------------------------
 
 
