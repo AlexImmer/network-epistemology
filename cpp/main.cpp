@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-/*
+
     // aliveness by transformation
     for (int year = MIN_YEAR; year <= MAX_YEAR; year++) {
         cerr << year << endl;
@@ -164,19 +164,18 @@ int main(int argc, char *argv[]) {
             }
         }
         bfs(year, CITES);
-        int min_dist = 1000;
-        int max_dist = 0;
-        reopen(ofs, outPath +  "distances" + to_string(year) + ".txt");
+        reopen(ofs, outPath +  "transformation" + to_string(year) + ".csv");
+        ofs << "pub_id,distance" << endl;
         for (auto pub : pub_infos) {
             int i = pub.first;
             int dst = dist[i];
-            min_dist = min(min_dist, dst);
-            max_dist = max(max_dist, dst);
-            ofs << dst << ",";
+            if (dst <= 0) {
+                continue;
+            }
+            ofs << pub.second.id << "," << dst << endl;
         }
-        cerr << min_dist << " " << max_dist << endl;
     }
-*/
+
 
     // aliveness by tradition
     for (int year = MIN_YEAR; year <= MAX_YEAR; year++) {
@@ -198,17 +197,16 @@ int main(int argc, char *argv[]) {
             }
         }
         bfs(year, COLLABORATES);
-        int min_dist = 1000;
-        int max_dist = 0;
-        reopen(ofs, outPath +  "tradition" + to_string(year) + ".txt");
+        reopen(ofs, outPath +  "tradition" + to_string(year) + ".csv");
+        ofs << "pub_id,distance" << endl;
         for (auto author : names) {
             int i = author.first;
             int dst = dist[i];
-            min_dist = min(min_dist, dst);
-            max_dist = max(max_dist, dst);
-            ofs << dst << ",";
+            if (dst <= 0) {
+                continue;
+            }
+            ofs << "\"" << author.second << "\"" << "," << dst << endl;
         }
-        cerr << min_dist << " " << max_dist << endl;
     }
     return 0;
 }
