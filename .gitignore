@@ -109,6 +109,7 @@ cpp/cmake-build-debug
 # Project-related
 publication_data/
 csv_data/
+out/
 
 # OSX
 .DS_Store

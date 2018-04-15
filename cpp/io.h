@@ -45,11 +45,11 @@ struct Edge {
 
 const int MAXV = 5000000;
 
-const int SPREADS = 0;
-const int CITES = 1;
-const int COLLABORATES = 2;
-const int PUBLISHES = 3;
-const int AUTHORED = 4;
+const int SPREADS = 1 << 0;
+const int CITES = 1 << 1;
+const int COLLABORATES = 1 << 2;
+const int PUBLISHES = 1 << 3;
+const int AUTHORED = 1 << 4;
 
 // Data to be serialized
 extern int V;

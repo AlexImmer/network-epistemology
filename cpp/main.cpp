@@ -19,6 +19,7 @@
 //#define SRLZ_GRAPH 1
 //#define SRLZ_CCS 1
 //#define WEIRD_PUBS 1
+#define ALIVENESS 1
 
 const int MIN_YEAR = 1936;
 const int MAX_YEAR = 2018;
@@ -50,20 +51,22 @@ void bfsCC(int startIdx) {
 
 queue<int> q;
 int dist[MAXV];
-void bfs(const int &year, const int &EDGE_TYPE) {
+
+void bfs(const int &year, const int &edge_mask) {
     for (; !q.empty(); q.pop()) {
         int curr = q.front();
         for (auto x : adj[curr]) {
-            if (x.type != EDGE_TYPE) {
+            if (!(x.type & edge_mask)) {
                 continue;
             }
             if (dist[x.next] != -1) {
                 continue;
             }
-            if (EDGE_TYPE == CITES && pub_infos[x.next].year >= year) {
+            if (pub_infos.find(x.next) != pub_infos.end() &&
+                pub_infos[x.next].year > year) {
                 continue;
             }
-            if (EDGE_TYPE == COLLABORATES && x.year >= year) {
+            if (x.type == COLLABORATES && x.year > year) {
                 continue;
             }
             dist[x.next] = dist[curr] + 1;
@@ -72,12 +75,26 @@ void bfs(const int &year, const int &EDGE_TYPE) {
     }
 }
 
-template <typename Stream>
-void reopen(Stream &ofs, const string &fileName)
-{
+template<typename Stream>
+void reopen(Stream &ofs, const string &fileName) {
     ofs.close();
     ofs.clear();
     ofs.open(fileName);
+}
+
+int tree_size[MAXV];
+
+void dfs(int curr, const int &edge_type) {
+    tree_size[curr] = 1;
+    for (auto x : adj[curr]) {
+        if (!(x.type & edge_type)) {
+            continue;
+        }
+        if (tree_size[x.next] == -1) {
+            dfs(x.next, edge_type);
+        }
+        tree_size[curr] += tree_size[x.next];
+    }
 }
 
 int main(int argc, char *argv[]) {
@@ -148,8 +165,9 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-
-    // aliveness by transformation
+#ifdef ALIVENESS
+/*
+    cerr << "Aliveness by transformation" << endl;
     for (int year = MIN_YEAR; year <= MAX_YEAR; year++) {
         cerr << year << endl;
         while (!q.empty()) {
@@ -163,21 +181,24 @@ int main(int argc, char *argv[]) {
                 q.push(i);
             }
         }
-        bfs(year, CITES);
-        reopen(ofs, outPath +  "transformation" + to_string(year) + ".csv");
+        int maxi = 0;
+        bfs(year, CITES | SPREADS);
+        reopen(ofs, outPath + "transformation" + to_string(year) + ".csv");
         ofs << "pub_id,distance" << endl;
         for (auto pub : pub_infos) {
             int i = pub.first;
             int dst = dist[i];
+            maxi = max(maxi, dst);
             if (dst <= 0) {
                 continue;
             }
             ofs << pub.second.id << "," << dst << endl;
         }
+        cerr << maxi << endl;
     }
+*/
 
-
-    // aliveness by tradition
+    cerr << "Aliveness by tradition:" << endl;
     for (int year = MIN_YEAR; year <= MAX_YEAR; year++) {
         cerr << year << endl;
         while (!q.empty()) {
@@ -186,27 +207,51 @@ int main(int argc, char *argv[]) {
         memset(dist, -1, sizeof dist);
         for (auto pub : pub_infos) {
             int i = pub.first;
-            if (pub.second.year == year) {
-                for (auto x : adj[i]) {
-                    if (x.type != AUTHORED) {
-                        continue;
-                    }
-                    dist[x.next] = 0;
-                    q.push(x.next);
+            if (pub.second.year != year) {
+                continue;
+            }
+            for (auto x : adj[i]) {
+                if (x.type != AUTHORED) {
+                    continue;
                 }
+                dist[x.next] = 0;
+                q.push(x.next);
             }
         }
         bfs(year, COLLABORATES);
-        reopen(ofs, outPath +  "tradition" + to_string(year) + ".csv");
-        ofs << "pub_id,distance" << endl;
-        for (auto author : names) {
-            int i = author.first;
-            int dst = dist[i];
-            if (dst <= 0) {
+        int maxi = 0;
+        for (auto auth : names) {
+            int i = auth.first;
+            if (dist[i] == -1) {
                 continue;
             }
-            ofs << "\"" << author.second << "\"" << "," << dst << endl;
+            maxi = max(maxi, dist[i]);
+            for (auto x : adj[i]) {
+                if (x.type != PUBLISHES) {
+                    continue;
+                }
+                if (dist[x.next] == -1 || dist[x.next] > dist[i]) {
+                    dist[x.next] = dist[i];
+                }
+            }
+        }
+        cerr << maxi << endl;
+
+        reopen(ofs, outPath + "tradition" + to_string(year) + ".csv");
+        ofs << "pub_id,distance" << endl;
+        for (auto pub : pub_infos) {
+            int i = pub.first;
+            int dst = dist[i];
+            if (dst == -1) {
+                continue;
+            }
+            if (pub.second.year == year) {
+                continue;
+            }
+            ofs << pub.second.id << "," << dst << endl;
         }
     }
+#endif
+
     return 0;
 }
