@@ -18,8 +18,8 @@
 
 //#define SRLZ_GRAPH 1
 //#define SRLZ_CCS 1
-//#define WEIRD_PUBS 1
-#define ALIVENESS 1
+#define WEIRD_PUBS 1
+//#define ALIVENESS 1
 
 const int MIN_YEAR = 1936;
 const int MAX_YEAR = 2018;
@@ -158,10 +158,10 @@ int main(int argc, char *argv[]) {
         }
         for (auto v : cc) {
             if (v >= names.size()) {
-                ofs << pub_infos[v].title << endl;
+                ofs << pub_infos[v].id << endl;
             }
         }
-        ofs << "---------------------------------------------------------------------------------------------" << endl << endl;
+//        ofs << "---------------------------------------------------------------------------------------------" << endl << endl;
     }
 #endif
 
@@ -245,7 +245,7 @@ int main(int argc, char *argv[]) {
             if (dst == -1) {
                 continue;
             }
-            if (pub.second.year == year) {
+            if (pub.second.year >= year) {
                 continue;
             }
             ofs << pub.second.id << "," << dst << endl;
