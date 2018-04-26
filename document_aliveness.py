@@ -9,8 +9,12 @@ from loading import load_corpus, load_doc_topics, load_concept_distances
 k = 100  # n topics
 
 
-def obtain_min_dist_split(X_topic, years, max_mem=10**7, l0=False):
-    dist_metric = compute_dists_l0 if l0 else compute_dists_l1
+def obtain_min_dist_split(X_topic, years, max_mem=10**7, l0=False, subset=False):
+    # only accept either or none
+    assert not (subset and l0)
+    dist_metric = compute_dists_l0 if l0 else (compute_dists_subset if subset
+                                               else compute_dists_l1)
+    norm = 'l0' if lo else ('Sub' if subset else '')
     for year in tqdm(sorted(list(years))[1:]):
         try:
             load_concept_distances(year, l0)
@@ -34,10 +38,11 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7, l0=False):
             closest.extend(res[1])
         min_dist['min_dist'] = dists
         min_dist['closest_doc'] = closest
-        min_dist.to_pickle('data/{year}_distances{norm}.pd'.format(year=year, norm='l0' if l0 else ''))
+        min_dist.to_pickle('data/{year}_distances{norm}.pd'.format(year=year, norm=norm))
 
 
 def compute_dists_l1(X_prev):
+    # l1 distance between topic distributions
     dists = cdist(X_prev, X_cur.values, metric='cityblock')
     min_dists = dists.min(axis=1)
     closest_ixs = X_cur.index[dists.argmin(axis=1)]
@@ -45,8 +50,19 @@ def compute_dists_l1(X_prev):
 
 
 def compute_dists_l0(X_prev):
+    # l0 distance for values >= 1/k so its limited by k
     dists = cdist(X_prev >= 1/k, X_cur.values >= 1/k, metric='hamming')
     min_dists = (dists.min(axis=1) * k).astype(np.int16)
+    closest_ixs = X_cur.index[dists.argmin(axis=1)]
+    return min_dists, closest_ixs
+
+
+def compute_dists_subset(X_prev):
+    # number of elements not covered (0 if X_cur contains a superset of
+    # topics for an element in X_prev). 1 if one topic is not covered etc.
+    dists = (cdist(X_prev >= 1/k, X_cur.values >= 1/k, metric='russelrao') * k) - k \
+            + np.sum(X_prev >= 1/k, axis=1)[:, np.newaxis]
+    min_dists = (dists.min(axis=1)).astype(np.int16)
     closest_ixs = X_cur.index[dists.argmin(axis=1)]
     return min_dists, closest_ixs
 
@@ -80,4 +96,6 @@ if __name__ == '__main__':
     obtain_min_dist_split(X_multopic, years, max_mem=10**7)
     print('Compute L0')
     obtain_min_dist_split(X_multopic, years, max_mem=10**7, l0=True)
+    print('Compute Subset')
+    obtain_min_dist_split(X_multopic, years, max_mem=10**7, subset=True)
     print('finished.')
