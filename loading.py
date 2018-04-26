@@ -39,8 +39,8 @@ def load_doc_topics(file=None):
     return np.load(file)
 
 
-def load_concept_distances(year, keep_closeest_doc=False):
-    file = data_dir + '{year}_distances.pd'.format(year=year)
+def load_concept_distances(year, l0=False, keep_closeest_doc=False):
+    file = data_dir + '{year}_distances{norm}.pd'.format(year=year, norm='l0' if l0 else '')
     df = pd.read_pickle(file)
     if not keep_closeest_doc:
         del df['closest_doc']

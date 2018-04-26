@@ -4,17 +4,20 @@ from scipy.spatial.distance import cdist
 from tqdm import tqdm
 from multiprocessing import Pool
 
-from loading import load_corpus, load_doc_topics, load_delta
+from loading import load_corpus, load_doc_topics, load_concept_distances
+
+k = 100  # n topics
 
 
-def obtain_min_dist_split(X_topic, years, max_mem=10**7):
+def obtain_min_dist_split(X_topic, years, max_mem=10**7, l0=False):
+    dist_metric = compute_dists_l0 if l0 else compute_dists_l1
     for year in tqdm(sorted(list(years))[1:]):
         try:
-            load_delta(year)
+            load_concept_distances(year, l0)
             continue
         except:
             pass
-        cols = np.arange(0, 100)
+        cols = np.arange(0, k)
         X_prev = X_topic.loc[(X_topic['year'] < year), cols]
         global X_cur
         X_cur = X_topic.loc[(X_topic['year'] == year), cols]
@@ -23,7 +26,7 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7):
         X_prev = X_prev.values
         X_prevs = [X_prev[i: i+ix_stepsize] for i in range(0, len(X_prev), ix_stepsize)]
         with Pool(processes=32) as pool:
-            res_list = pool.map(compute_dists, X_prevs)
+            res_list = pool.map(dist_metric, X_prevs)
         dists = []
         closest = []
         for res in res_list:
@@ -31,11 +34,18 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7):
             closest.extend(res[1])
         min_dist['min_dist'] = dists
         min_dist['closest_doc'] = closest
-        min_dist.to_pickle('data/{year}_distances.pd'.format(year=year))
+        min_dist.to_pickle('data/{year}_distances{norm}.pd'.format(year=year, norm='l0' if l0 else ''))
 
 
-def compute_dists(X_prev):
+def compute_dists_l1(X_prev):
     dists = cdist(X_prev, X_cur.values, metric='cityblock')
+    min_dists = dists.min(axis=1)
+    closest_ixs = X_cur.index[dists.argmin(axis=1)]
+    return min_dists, closest_ixs
+
+
+def compute_dists_l0(X_prev):
+    dists = cdist(X_prev >= 1/k, X_cur.values >= 1/k, metric='hamming')
     min_dists = dists.min(axis=1)
     closest_ixs = X_cur.index[dists.argmin(axis=1)]
     return min_dists, closest_ixs
@@ -44,7 +54,7 @@ def compute_dists(X_prev):
 def obtain_min_distances(X_topic, years):
     res = {}
     for year in tqdm(sorted(list(years))[1:]):
-        cols = np.arange(0, 100)
+        cols = np.arange(0, k)
         X_prev = X_topic[X_topic['year'] < year][cols]
         X_cur = X_topic[X_topic['year'] == year][cols]
         min_dist = cdist(X_prev.values, X_cur.values, metric='cityblock').min(axis=1)
