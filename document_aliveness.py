@@ -12,9 +12,9 @@ k = 100  # n topics
 def obtain_min_dist_split(X_topic, years, max_mem=10**7, l0=False, subset=False):
     # only accept either or none
     assert not (subset and l0)
-    dist_metric = compute_dists_l0 if l0 else (compute_dists_subset if subset
-                                               else compute_dists_l1)
-    norm = 'l0' if lo else ('Sub' if subset else '')
+    dist_metric = compute_dists_l0 if l0 \
+        else (compute_dists_subset if subset else compute_dists_l1)
+    norm = 'l0' if l0 else ('Sub' if subset else '')
     for year in tqdm(sorted(list(years))[1:]):
         try:
             load_concept_distances(year, l0)
@@ -92,10 +92,10 @@ if __name__ == '__main__':
     years = set(dates_corpus)
     del dates_corpus
     del ids_corpus
-    print('Compute L1')
-    obtain_min_dist_split(X_multopic, years, max_mem=10**7)
-    print('Compute L0')
-    obtain_min_dist_split(X_multopic, years, max_mem=10**7, l0=True)
     print('Compute Subset')
     obtain_min_dist_split(X_multopic, years, max_mem=10**7, subset=True)
+    print('Compute L0')
+    obtain_min_dist_split(X_multopic, years, max_mem=10**7, l0=True)
+    print('Compute L1')
+    obtain_min_dist_split(X_multopic, years, max_mem=10**7)
     print('finished.')
