@@ -60,7 +60,7 @@ def compute_dists_l0(X_prev):
 def compute_dists_subset(X_prev):
     # number of elements not covered (0 if X_cur contains a superset of
     # topics for an element in X_prev). 1 if one topic is not covered etc.
-    dists = (cdist(X_prev >= 1/k, X_cur.values >= 1/k, metric='russelrao') * k) - k \
+    dists = (cdist(X_prev >= 1/k, X_cur.values >= 1/k, metric='russellrao') * k) - k \
             + np.sum(X_prev >= 1/k, axis=1)[:, np.newaxis]
     min_dists = (dists.min(axis=1)).astype(np.int16)
     closest_ixs = X_cur.index[dists.argmin(axis=1)]
