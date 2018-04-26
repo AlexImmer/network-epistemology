@@ -46,7 +46,7 @@ def compute_dists_l1(X_prev):
 
 def compute_dists_l0(X_prev):
     dists = cdist(X_prev >= 1/k, X_cur.values >= 1/k, metric='hamming')
-    min_dists = dists.min(axis=1)
+    min_dists = (dists.min(axis=1) * k).astype(np.int16)
     closest_ixs = X_cur.index[dists.argmin(axis=1)]
     return min_dists, closest_ixs
 
@@ -76,5 +76,8 @@ if __name__ == '__main__':
     years = set(dates_corpus)
     del dates_corpus
     del ids_corpus
+    print('Compute L1')
     obtain_min_dist_split(X_multopic, years, max_mem=10**7)
+    print('Compute L0')
+    obtain_min_dist_split(X_multopic, years, max_mem=10**7, l0=True)
     print('finished.')
