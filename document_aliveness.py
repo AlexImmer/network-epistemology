@@ -17,7 +17,7 @@ def obtain_min_dist_split(X_topic, years, max_mem=10**7, l0=False, subset=False)
     norm = 'l0' if l0 else ('Sub' if subset else '')
     for year in tqdm(sorted(list(years))[1:]):
         try:
-            load_concept_distances(year, l0)
+            load_concept_distances(year, l0, subset)
             continue
         except:
             pass
