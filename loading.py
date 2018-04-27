@@ -39,6 +39,15 @@ def load_doc_topics(file=None):
     return np.load(file)
 
 
+def load_jump_edges(year, tradition=True):
+    # load directed edges starting from unconnected nodes to any other node
+    # by criterion of the topics(start_node) <= topics(target_node)
+    case = 'tradition' if tradition else 'transformation'
+    file = data_dir + '{year}_jump_edges_{case}.csv'.format(year=year, case=case)
+    df = pd.read_csv(file)
+    return df
+
+
 def load_concept_distances(year, l0=False, subset=False, keep_closeest_doc=False):
     assert not (subset and l0)
     norm = 'l0' if l0 else ('Sub' if subset else '')
