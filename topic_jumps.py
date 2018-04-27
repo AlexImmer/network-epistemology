@@ -36,7 +36,7 @@ def obtain_jump_edge_distances(X_topic, years, max_mem=10**7, tradition=True):
         X_cur = X_cur.loc[connected]
         ix_stepsize = int(max_mem / len(X_cur))
         X_prevs = [X_prev.iloc[i: i+ix_stepsize] for i in range(0, len(X_prev), ix_stepsize)]
-        with Pool(processes=8) as pool:
+        with Pool(processes=18) as pool:
             res_list = pool.map(find_edges, X_prevs)
         map = {}
         for res in res_list:
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     del dates_corpus
     del ids_corpus
     print('Tradition')
-    obtain_jump_edge_distances(X_multopic, years, max_mem=10**7, tradition=False)
-    print('Transformation')
     obtain_jump_edge_distances(X_multopic, years, max_mem=10**7, tradition=True)
+    print('Transformation')
+    obtain_jump_edge_distances(X_multopic, years, max_mem=10**7, tradition=False)
     print('finished.')
