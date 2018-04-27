@@ -39,15 +39,6 @@ def load_doc_topics(file=None):
     return np.load(file)
 
 
-def load_jump_edges(year, tradition=True):
-    # load directed edges starting from unconnected nodes to any other node
-    # by criterion of the topics(start_node) <= topics(target_node)
-    case = 'tradition' if tradition else 'transformation'
-    file = data_dir + '{year}_jump_edges_{case}.csv'.format(year=year, case=case)
-    df = pd.read_csv(file)
-    return df
-
-
 def load_concept_distances(year, l0=False, subset=False, keep_closeest_doc=False):
     assert not (subset and l0)
     norm = 'l0' if l0 else ('Sub' if subset else '')
@@ -57,6 +48,20 @@ def load_concept_distances(year, l0=False, subset=False, keep_closeest_doc=False
         del df['closest_doc']
         df.columns = ['concept_distance']
     df.index.name = 'pub_id'
+    return df
+
+
+def load_jump_transformation_distances(year):
+    file = data_dir + 'jump_transformation{year}.csv'.format(year=year)
+    df = pd.read_csv(file, index_col=0)
+    df.columns = ['jump_transformation_distance']
+    return df
+
+
+def load_jump_tradition_distances(year):
+    file = data_dir + 'jump_tradition{year}.csv'.format(year=year)
+    df = pd.read_csv(file, index_col=0)
+    df.columns = ['jump_tradition_distance']
     return df
 
 
@@ -74,15 +79,36 @@ def load_tradition_distances(year):
     return df
 
 
-def load_distances(year):
-    # TODO: remove broken papers
-    conc = load_concept_distances(year)
+def load_graph_distances(year):
+    conc = load_full_indices(year)
     trans = load_transformation_distances(year)
     trad = load_tradition_distances(year)
     # conc contains all the right indices
     res = conc.merge(trans, how='left', left_index=True, right_index=True)
     res = res.merge(trad, how='left', left_index=True, right_index=True)
     return res
+
+
+def load_distances(year):
+    conc = load_full_indices(year)
+    trans = load_transformation_distances(year)
+    trad = load_tradition_distances(year)
+    trad_jump = load_jump_tradition_distances(year)
+    trans_jump = load_jump_transformation_distances(year)
+    # conc contains all the right indices
+    res = conc.merge(trans, how='left', left_index=True, right_index=True)
+    res = res.merge(trad, how='left', left_index=True, right_index=True)
+    res = res.merge(trad_jump, how='left', left_index=True, right_index=True)
+    res = res.merge(trans_jump, how='left', left_index=True, right_index=True)
+    return res
+
+
+def load_full_indices(year):
+    file = data_dir + 'indices_years.csv'
+    df = pd.read_csv(file, index_col=0)
+    df = df.loc[df.year < year]
+    df.drop(labels='year', axis='columns', inplace=True)
+    return df
 
 
 def load_disconnected_publications():

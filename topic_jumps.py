@@ -4,42 +4,52 @@ from scipy.spatial.distance import cdist
 from tqdm import tqdm
 from multiprocessing import Pool
 
-from loading import load_corpus, load_doc_topics, load_jump_edges, load_distances, data_dir
+from loading import load_corpus, load_doc_topics, load_graph_distances, data_dir, load_jump_transformation_distances, \
+    load_jump_tradition_distances
 
 k = 100  # n topics
 
 
-def compute_jump_edges(X_topic, years, max_mem=10**7, tradition=True):
+def obtain_jump_edge_distances(X_topic, years, max_mem=10**7, tradition=True):
     col = ('tradition' if tradition else 'transformation') + '_distance'
     for year in tqdm(sorted(list(years))[1:]):
         try:
-            load_jump_edges(year, tradition)
+            if tradition:
+                load_jump_tradition_distances(year)
+            else:
+                load_jump_transformation_distances(year)
             continue
         except:
             pass
         cols = np.arange(0, k)
-        dists = load_distances(year)
-        disconnected = dists[dists[col].isnull()].index
-        # 2 stage filtering for speed in early years
+        dists = load_graph_distances(year)
+        # extend dists by current year pubs (dist = 0)
+        current = X_topic.loc[(X_topic['year'] == year)].index
+        current = pd.DataFrame(0, columns=[col], index=current)
+        dists = dists.append(current)
+        disconnected = dists[dists[col].isna()].index
+        connected = dists[dists[col].notna()].index
         X_prev = X_topic.loc[(X_topic['year'] < year), cols]
-        X_prev = X_prev.loc[disconnected, cols]
+        X_prev = X_prev.loc[disconnected]
         global X_cur
         X_cur = X_topic.loc[(X_topic['year'] <= year), cols]
+        X_cur = X_cur.loc[connected]
         ix_stepsize = int(max_mem / len(X_cur))
         X_prevs = [X_prev.iloc[i: i+ix_stepsize] for i in range(0, len(X_prev), ix_stepsize)]
-        with Pool(processes=4) as pool:
+        with Pool(processes=8) as pool:
             res_list = pool.map(find_edges, X_prevs)
-        starts = []
-        ends = []
+        map = {}
         for res in res_list:
-            starts.extend(res[0])
-            ends.extend(res[1])
-        edges = pd.DataFrame()
-        edges['start'] = starts
-        edges['end'] = ends
+            for s, e in zip(res[0], res[1]):
+                if map.get(s):
+                    map[s].append(e)
+                else:
+                    map[s] = [e]
+        res = pd.DataFrame(index=list(map.keys()))
+        res['topic_' + col] = res.index.map(lambda x: dists.loc[map[x], col].min())
         case = 'tradition' if tradition else 'transformation'
-        file = data_dir + '{year}_jump_edges_{case}.csv'.format(year=year, case=case)
-        edges.to_csv(file, index=False)
+        file = data_dir + 'jump_{case}{year}.csv'.format(year=year, case=case)
+        res.to_csv(file, index_label='pub_id')
 
 
 def find_edges(X_prev):
@@ -49,18 +59,6 @@ def find_edges(X_prev):
             + np.sum(X_prev >= 1 / k, axis=1)[:, np.newaxis]
     starts, ends = np.where(dists == 0)
     return list(X_prev.index[starts]), list(X_cur.index[ends])
-
-
-def obtain_min_distances(X_topic, years):
-    res = {}
-    for year in tqdm(sorted(list(years))[1:]):
-        cols = np.arange(0, k)
-        X_prev = X_topic[X_topic['year'] < year][cols]
-        X_cur = X_topic[X_topic['year'] == year][cols]
-        min_dist = cdist(X_prev.values, X_cur.values, metric='cityblock').min(axis=1)
-        min_dist = pd.DataFrame(min_dist, index=X_prev.index)
-        res[year] = min_dist
-    return res
 
 
 if __name__ == '__main__':
@@ -77,7 +75,7 @@ if __name__ == '__main__':
     del dates_corpus
     del ids_corpus
     print('Tradition')
-    compute_jump_edges(X_multopic, years, max_mem=10**7, tradition=True)
+    obtain_jump_edge_distances(X_multopic, years, max_mem=10**7, tradition=False)
     print('Transformation')
-    compute_jump_edges(X_multopic, years, max_mem=10**7, tradition=False)
+    obtain_jump_edge_distances(X_multopic, years, max_mem=10**7, tradition=True)
     print('finished.')
