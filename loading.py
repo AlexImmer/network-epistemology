@@ -34,6 +34,14 @@ def load_corpus(files=None):
     return ids_corpus, text_corpus, dates_corpus
 
 
+def load_corpus_df():
+    ids, text, dates = load_corpus()
+    df =  pd.DataFrame(index=ids)
+    df['text'] = text
+    df['year'] = dates
+    return df
+
+
 def load_doc_topics(file=None):
     file = file or data_dir + 'X_multopic.npy'
     return np.load(file)
@@ -89,7 +97,7 @@ def load_graph_distances(year):
     return res
 
 
-def load_distances(year):
+def load_distances(year, with_concept=True, subset=False, l0=False):
     conc = load_full_indices(year)
     trans = load_transformation_distances(year)
     trad = load_tradition_distances(year)
@@ -100,14 +108,22 @@ def load_distances(year):
     res = res.merge(trad, how='left', left_index=True, right_index=True)
     res = res.merge(trad_jump, how='left', left_index=True, right_index=True)
     res = res.merge(trans_jump, how='left', left_index=True, right_index=True)
+    if with_concept:
+        concsub = load_concept_distances(year, subset=subset, l0=l0)
+        res = res.merge(concsub, how='left', left_index=True, right_index=True)
     return res
 
 
 def load_full_indices(year):
-    file = data_dir + 'indices_years.csv'
-    df = pd.read_csv(file, index_col=0)
+    df = load_indices_years()
     df = df.loc[df.year < year]
     df.drop(labels='year', axis='columns', inplace=True)
+    return df
+
+
+def load_indices_years():
+    file = data_dir + 'indices_years.csv'
+    df = pd.read_csv(file, index_col=0)
     return df
 
 
