@@ -87,8 +87,11 @@ def load_tradition_distances(year):
     return df
 
 
-def load_graph_distances(year):
+def load_graph_distances(year, filter_discon=False):
     conc = load_full_indices(year)
+    if filter_discon:
+        pubs = load_disconnected_publications()
+        conc = conc.loc[conc.index.difference(pubs.index)]
     trans = load_transformation_distances(year)
     trad = load_tradition_distances(year)
     # conc contains all the right indices
@@ -121,9 +124,12 @@ def load_full_indices(year):
     return df
 
 
-def load_indices_years():
+def load_indices_years(filter_discon=False):
     file = data_dir + 'indices_years.csv'
     df = pd.read_csv(file, index_col=0)
+    if filter_discon:
+        pubs = load_disconnected_publications()
+        df = df.loc[df.index.difference(pubs.index)]
     return df
 
 
